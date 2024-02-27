@@ -446,6 +446,7 @@ const FunctionForm: React.FC<IFunctionForm> = ({
     initialValues: {
       ...initialValues,
     },
+    enableReinitialize: true,
     validationSchema: Yup.object(validationSchema),
     onSubmit: (finalValues) => {
       try {
