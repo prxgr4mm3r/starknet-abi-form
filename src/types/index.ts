@@ -32,7 +32,7 @@ const yupAbiEventKindSchema = Yup.string()
 const yupAbiEventFieldSchema = Yup.object().shape({
   name: Yup.string().strict(true).required(),
   type: Yup.string().strict(true).required(),
-  kind: Yup.string().strict(true).oneOf(['key', 'data', 'nested']),
+  kind: Yup.string().strict(true).oneOf(['key', 'data', 'nested', 'flat']),
 });
 
 const yupAbiEnumEventSchema = Yup.object().shape({
