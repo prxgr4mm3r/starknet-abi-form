@@ -99,6 +99,16 @@ export function extractStructFromABI(abi: ABI) {
   return structs;
 }
 
+export function extractEnumFromABI(abi: ABI) {
+  const enums: ABIEnum[] = [];
+  abi?.forEach((item: any) => {
+    if (typeof item === 'object' && item.type && item.type === 'enum') {
+      enums.push(item);
+    }
+  });
+  return enums;
+}
+
 export function extractEnumsFromABI(abi: ABI) {
   const enums: ABIEnum[] = [];
   abi?.forEach((item: any) => {
@@ -132,12 +142,17 @@ export function hasArrayOfSubType(type: string): boolean {
 
 export function extractSubTypesFromType(type: string): ReturnExtractedSubTypes {
   const regex = /<[^<>]*>/g;
-  if (type && typeof type === 'string') {
+  if (type) {
     if (hasSubTypes(type)) {
       const matches = type.match(regex) || [];
       const finalMatch = matches.map((lType) =>
         lType.substring(1, lType.length - 1)
       );
+      if (matches.length === 0) {
+        return {
+          contains: false,
+        };
+      }
       return {
         contains: true,
         types: finalMatch,
@@ -159,31 +174,72 @@ export const transformStringArrayToInteger = (value: string[]): bigint[] =>
     return lValue;
   });
 
-export function finalizeValues(value: any): any {
-  if (typeof value === 'string') {
-    return finalTransformedValue(value);
-  }
+// export function finalizeValues(value: any): any {
+//   if (typeof value === 'string') {
+//     return finalTransformedValue(value);
+//   }
+//
+//   if (Array.isArray(value)) {
+//     return value.map((val) => {
+//       if (typeof val === 'string') {
+//         return finalTransformedValue(val);
+//       }
+//       return finalizeValues(val);
+//     });
+//   }
+//
+//   if (typeof value === 'object') {
+//     return Object.keys(value).reduce((prev, key) => {
+//       const curr = value[key];
+//       const currFVal = finalizeValues(curr);
+//       return {
+//         ...prev,
+//         [key]: currFVal,
+//       };
+//     }, {});
+//   }
+//   return value;
+// }
 
-  if (Array.isArray(value)) {
-    return value.map((val) => {
-      if (typeof val === 'string') {
-        return finalTransformedValue(val);
-      }
-      return finalizeValues(val);
-    });
-  }
-
-  if (typeof value === 'object') {
-    return Object.keys(value).reduce((prev, key) => {
-      const curr = value[key];
-      const currFVal = finalizeValues(curr);
+export function finalizeValues(val: any, type: string): any {
+  if (typeof val === 'object') {
+    return Object.keys(val).reduce((prev, key) => {
+      const curr = val[key];
+      const currFVal = finalizeValues(curr, type);
       return {
         ...prev,
         [key]: currFVal,
       };
     }, {});
   }
-  return value;
+  // const value = BigInt(finalTransformedValue(val));
+  // console.log(typeof value);
+  // if (type.startsWith('core::integer::u256')) {
+  //   const first = value && 2n ** 128n;
+  //   const binary = value.toString(2);
+  //   const second = binary.slice(0, 128);
+  //   console.log('u256 serialize: ', first, second, binary);
+  // } else if (
+  //   type.startsWith('core::integer::u') ||
+  //   type.startsWith('core::felt252')
+  // ) {
+  //   // todo
+  // } else if (type.startsWith('core::integer::i')) {
+  //   // todo
+  // }
+  if (typeof val === 'string') {
+    return finalTransformedValue(val);
+  }
+
+  if (Array.isArray(val)) {
+    return val.map((v) => {
+      if (typeof v === 'string') {
+        return finalTransformedValue(v);
+      }
+      return finalizeValues(v, type);
+    });
+  }
+  return val;
 }
 
 export function flattenToRawCallData(value: any): any {

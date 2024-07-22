@@ -4,7 +4,7 @@ import * as Yup from 'yup';
 import { useFormik } from 'formik';
 import loadashFp from 'lodash';
 import { useAtom } from 'jotai';
-import { ABIFunction, ABIStruct, yupAbiFunctionSchema } from './types';
+import { ABIEnum, ABIFunction, ABIStruct, yupAbiFunctionSchema } from './types';
 
 import './FunctionForm.css';
 import {
@@ -37,29 +37,34 @@ const typeToTagColor = (name: string): TagColors => {
     const pathNames = name?.split('::');
     const coreType = pathNames[pathNames.length - 1];
     // console.log({pathNames, coreType})
-
+    // todo
     switch (coreType) {
       case 'u8':
-        return 'green';
       case 'u16':
-        return 'green';
       case 'u32':
-        return 'green';
       case 'u64':
-        return 'green';
       case 'u128':
+      case 'u256':
         return 'green';
+      case 'i8':
+      case 'i16':
+      case 'i32':
+      case 'i64':
+      case 'i128':
+        return 'blue';
       case 'bool':
         return 'indigo';
       case 'felt252':
         return 'yellow';
       case 'ContractAddress':
         return 'pink';
+      case 'ByteArray':
+        return 'purple';
       default:
-        return 'blue';
+        return 'gray';
     }
   } catch (e) {
-    return 'blue';
+    return 'gray';
   }
 };
 
@@ -402,7 +407,7 @@ type IFunctionForm = {
   functionAbi: ABIFunction;
   response?: React.ReactNode;
   structs: ABIStruct[];
-  // enums: ABIEnum[];
+  enums: ABIEnum[];
 };
 
 const FunctionForm: React.FC<IFunctionForm> = ({
@@ -411,7 +416,7 @@ const FunctionForm: React.FC<IFunctionForm> = ({
   callbackFn,
   response,
   buttonLabel,
-  // enums,
+  enums,
 }) => {
   // Check if functionAbi is correct with yup validation schema
   try {
@@ -425,8 +430,11 @@ const FunctionForm: React.FC<IFunctionForm> = ({
     );
   }
 
-  const initialValuesMap = reduceFunctionInputs(functionAbi?.inputs, structs);
-  // console.log({initialValuesMap, functionAbi, structs});
+  const initialValuesMap = reduceFunctionInputs(
+    functionAbi?.inputs,
+    structs,
+    enums
+  );
   // Freezing object, as these are reference maps used to make initial forms
   // also helpers like type info + validation schema
   const initialValues = Object.freeze(extractInitialValues(initialValuesMap));
@@ -434,7 +442,13 @@ const FunctionForm: React.FC<IFunctionForm> = ({
     extractValidationSchema(initialValuesMap)
   );
   const abiTypesInfo = Object.freeze(extractAbiTypes(initialValuesMap));
-  // console.log({ initialValues, validationSchema, abiTypesInfo });
+  console.log({
+    functionAbi,
+    initialValuesMap,
+    initialValues,
+    validationSchema,
+    abiTypesInfo,
+  });
 
   // Persistent State on Jotai
   const [formStates, setFormsState] = useAtom(formsAtom);
@@ -450,16 +464,21 @@ const FunctionForm: React.FC<IFunctionForm> = ({
     validationSchema: Yup.object(validationSchema),
     onSubmit: (finalValues) => {
       try {
-        const finalizedValues = finalizeValues(finalValues);
+        const finalizedValues = finalizeValues(
+          finalValues,
+          'core::integer::u256'
+        );
         const rawArrayValues = flattenToRawCallData(finalizedValues);
+        // console.log('rawArrayValues:', rawArrayValues);
         const starkliValues = transformStringArrayToInteger(
           flattenArrays(rawArrayValues) as string[]
         );
-
+        // console.log('starkliValues', starkliValues);
         const starknetValues = Object.keys(finalizedValues).map(
           // @ts-ignore
           (key) => finalizedValues[key]
         );
+        // console.log('starknetValues', starknetValues);
 
         const callbackReturnValues: CallbackReturnType = {
           raw: finalValues,

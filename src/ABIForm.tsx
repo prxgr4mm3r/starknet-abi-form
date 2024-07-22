@@ -4,10 +4,11 @@ import React, { useMemo, useState } from 'react';
 
 import { ABI, abiSchema } from './types/index';
 import {
+  extractEnumsFromABI,
   extractFunctionFromRawAbi,
   extractStructFromABI,
-  segregateViewAndExternalFunctions,
-} from './types/helper';
+  segregateViewAndExternalFunctions
+} from "./types/helper";
 import FunctionForm from './FunctionForm';
 import { Content, List, Root, Trigger } from './UIComponents/Tabs/Tabs';
 import { ActiveTabClasses, DefaultTabClasses } from './utils/tailwindClasses';
@@ -67,13 +68,13 @@ export const ABIForm: React.FC<ABIFormProps> = ({
     }
   }, [abi]);
 
-  // const enums = useMemo(() => {
-  //   try {
-  //     return extractEnumsFromABI(abi);
-  //   } catch (e) {
-  //     return [];
-  //   }
-  // }, [abi]);
+  const enums = useMemo(() => {
+    try {
+      return extractEnumsFromABI(abi);
+    } catch (e) {
+      return [];
+    }
+  }, [abi]);
 
   const [activeTab, setActiveTab] = useState<'read' | 'write'>('read');
 
@@ -110,6 +111,7 @@ export const ABIForm: React.FC<ABIFormProps> = ({
               key={`viewFn-${viewFn.name}`}
               functionAbi={viewFn}
               structs={structs}
+              enums={enums}
               callbackFn={callBackFn}
               response={responses && responses[viewFn?.name]}
               // enums={enums}
@@ -122,6 +124,7 @@ export const ABIForm: React.FC<ABIFormProps> = ({
               key={`externalFn-${externalFn.name}`}
               functionAbi={externalFn}
               structs={structs}
+              enums={enums}
               callbackFn={callBackFn}
               response={responses && responses[externalFn?.name]}
               // enums={enums}
