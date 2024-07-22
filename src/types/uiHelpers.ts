@@ -2,7 +2,6 @@ import * as Yup from 'yup';
 import { ABIEnum, ABIFunctionInputs, ABIStruct } from '.';
 import { isACoreType } from './dataTypes';
 import { extractSubTypesFromType, hasArrayOfSubType } from './helper';
-import { red } from "@radix-ui/colors";
 
 // name: {type: core | array | struct, validation: yupSchema, content: [] | {} | ''}
 
@@ -576,7 +575,7 @@ export function extractValidationSchema(values: UIType | {}): {} {
       // @ts-ignore
       const currentObj = values[c];
       //   console.log(currentObj);
-      if (currentObj?.type === 'core') {
+      if (currentObj?.type === 'core' || currentObj?.type === '()') {
         return {
           ...p,
           [c]: currentObj?.validationSchema,
@@ -587,6 +586,18 @@ export function extractValidationSchema(values: UIType | {}): {} {
         return {
           ...p,
           [c]: Yup.object(extractValidationSchema(currentObj?.content)),
+        };
+      }
+
+      if (currentObj?.type === 'enum') {
+        return {
+          ...p,
+          [c]: Yup.object().shape({
+            select: Yup.string().required(),
+            versions: Yup.object(
+              extractValidationSchema(currentObj?.content.variants)
+            ),
+          }),
         };
       }
 
