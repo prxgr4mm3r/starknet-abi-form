@@ -6,14 +6,14 @@ import { extractSubTypesFromType, hasArrayOfSubType } from './helper';
 // name: {type: core | array | struct, validation: yupSchema, content: [] | {} | ''}
 
 function functionFindFromStructs(structs: ABIStruct[], name: string) {
-  if (name && typeof name === 'string') {
+  if (name) {
     return structs.findIndex((struct) => struct?.name === name);
   }
   return -1;
 }
 
 function functionFindFromEnums(enums: ABIEnum[], name: string) {
-  if (name && typeof name === 'string') {
+  if (name) {
     return enums.findIndex((enm) => enm?.name === name);
   }
   return -1;
@@ -508,7 +508,7 @@ export function extractInitialValues(values: UIType | {}): {} {
     return Object.keys(values).reduce((p, c) => {
       // @ts-ignore
       const currentObj = values[c];
-      console.log(currentObj);
+      // console.log(currentObj);
       if (currentObj?.type === 'core') {
         return {
           ...p,
@@ -628,7 +628,7 @@ export function extractAbiTypes(values: UIType | {}): {} {
       // @ts-ignore
       const currentObj = values[c];
 
-      if (currentObj?.type === 'core') {
+      if (currentObj?.type === 'core' || currentObj?.type === '()') {
         return {
           ...p,
           [c]: currentObj?.abi_type,
@@ -639,6 +639,17 @@ export function extractAbiTypes(values: UIType | {}): {} {
         return {
           ...p,
           [c]: extractAbiTypes(currentObj?.content),
+        };
+      }
+
+      if (currentObj?.type === 'enum') {
+        return {
+          ...p,
+          [c]: {
+            $type: 'enum',
+            selected: currentObj?.abi_type,
+            variants: extractAbiTypes(currentObj?.content.variants),
+          },
         };
       }
 

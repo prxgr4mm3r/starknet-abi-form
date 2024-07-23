@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import Select from 'react-select';
 
 import * as Yup from 'yup';
-import { useFormik } from 'formik';
+import { FormikErrors, useFormik } from 'formik';
 import loadashFp from 'lodash';
 import { useAtom } from 'jotai';
 import { ABIEnum, ABIFunction, ABIStruct, yupAbiFunctionSchema } from './types';
@@ -37,7 +38,6 @@ const typeToTagColor = (name: string): TagColors => {
     const pathNames = name?.split('::');
     const coreType = pathNames[pathNames.length - 1];
     // console.log({pathNames, coreType})
-    // todo
     switch (coreType) {
       case 'u8':
       case 'u16':
@@ -76,6 +76,11 @@ type IParseInputFieldsFromObject = {
   handleChange: (e: React.ChangeEvent<any>) => any;
   initialValues: Record<string, string | {} | Array<{}>>;
   parentKeys?: string[];
+  setFieldValue: (
+    field: string,
+    value: any,
+    shouldValidate?: boolean | undefined
+  ) => Promise<void> | Promise<FormikErrors<{}>>;
   values: Record<string, string | {} | Array<{}>>;
 };
 const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
@@ -87,12 +92,27 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
   handleChange,
   handleArrayPush,
   handleArrayPop,
+  setFieldValue,
 }) => {
   if (typeof values === 'object') {
     const keys = Object.keys(values);
+    // console.log('Values on parse from object:', values);
 
     return keys.map((key) => {
       const currentValueObject = values[key];
+      // console.log({ currentValueObject, parentKeys });
+      const fullPath = parentKeys ? [...parentKeys, key] : [key];
+      // console.log({ fullPath });
+      // Since Type conform to initial state,
+      // For arrays index 0 will have the valid type.
+      const initialFullPath = fullPath.map((pathItem) => {
+        if (Number.isNaN(parseInt(pathItem, 10))) {
+          return pathItem;
+        }
+        return '0';
+      });
+
+      let abiTypeInfo = '';
 
       if (typeof currentValueObject === 'string') {
         let name =
@@ -107,25 +127,17 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
         if (name.length > 0 && name.startsWith('.')) {
           name = name.slice(1);
         }
-
-        const fullPath = parentKeys ? [...parentKeys, key] : [key];
-        let error = '';
-
-        let abiTypeInfo = '';
-        if (loadashFp.has(errors, fullPath)) {
-          error = loadashFp.get(errors, fullPath);
-        }
-
-        // Since Type conform to initial state,
-        // For arrays index 0 will have the valid type.
-        const initialFullPath = fullPath.map((pathItem) => {
-          if (Number.isNaN(parseInt(pathItem, 10))) {
-            return pathItem;
-          }
-          return '0';
-        });
+        // console.log({ name });
+        // console.log({ has: loadashFp.has(abiTypes, initialFullPath) });
         if (loadashFp.has(abiTypes, initialFullPath)) {
           abiTypeInfo = loadashFp.get(abiTypes, initialFullPath);
+        }
+        // console.log({ abiTypeInfo });
+        // console.log({ initialFullPath });
+        let error = '';
+
+        if (loadashFp.has(errors, fullPath)) {
+          error = loadashFp.get(errors, fullPath);
         }
 
         return (
@@ -177,7 +189,117 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
         typeof currentValueObject === 'object' &&
         !Array.isArray(currentValueObject)
       ) {
-        const lParentKeys = parentKeys ? [...parentKeys, key] : [key];
+        let lParentKeys = parentKeys ? [...parentKeys, key] : [key];
+        if (loadashFp.has(abiTypes, initialFullPath)) {
+          abiTypeInfo = loadashFp.get(abiTypes, initialFullPath);
+        }
+        // console.log({ abiTypes, initialFullPath, abiTypeInfo });
+        if (Object.keys(abiTypeInfo).includes('$type')) {
+          lParentKeys = [...lParentKeys, 'variants'];
+
+          let name =
+            parentKeys && parentKeys?.length > 0
+              ? parentKeys?.reduce((p, c) => {
+                  if (Number.isNaN(parseInt(c, 10))) {
+                    return `${p}.${c}`;
+                  }
+                  return `${p}[${c}]`;
+                }, '')
+              : '';
+          if (name.length > 0 && name.startsWith('.')) {
+            name = name.slice(1);
+          }
+
+          const options = [{ value: '', label: 'Select an option' }];
+          Object.entries(Object.entries(abiTypeInfo)[2][1]).forEach(
+            ([k, val]) => options.push({ value: k, label: `${k}(${val})` })
+          );
+          // console.log(
+          //   'currentValueObject when parsing enum:',
+          //   currentValueObject
+          // );
+          let newValues = {};
+          Object.entries(Object.values(currentValueObject)[1]).forEach(
+            ([k, v]) => {
+              const abiEntries = Object.entries(Object.values(abiTypeInfo)[2]);
+              const variantAbi = abiEntries.find((entry) => entry[0] === k);
+              if (
+                Object.values(currentValueObject)[0] === k &&
+                (!variantAbi || variantAbi[1] !== '()')
+              ) {
+                newValues = {
+                  ...newValues,
+                  [k]: v,
+                };
+              }
+            }
+          );
+          // console.log({
+          //   newValues,
+          //   abi: Object.entries(Object.values(abiTypeInfo)[2]),
+          // });
+          return (
+            <div
+              className="w-full flex flex-col shadow-md shadow-green-500 rounded p-2 my-2 bg-green-50 function-struct"
+              key={lParentKeys.join('|')}
+            >
+              <p className="text-xl font-bold function-struct-header">
+                {typeof currentValueObject === 'object'
+                  ? (Object.entries(abiTypeInfo)[1][1] as string)
+                  : ''}{' '}
+                : {key}
+              </p>
+              <div
+                className="my-2 w-full px-2 py-1 border-gray-200 border-2 rounded function-form-input-wrapper"
+                key={fullPath?.join('|')}
+              >
+                <label
+                  htmlFor={`${name ? `${name}.` : ''}${key}.selected}`}
+                  className="block mb-2 text-sm font-medium input-label"
+                >
+                  {`${name ? `${name}.` : ''}${key}.selected`}
+                  <Tag
+                    style={{ marginLeft: '1rem' }}
+                    tag={typeToTagColor(Object.entries(abiTypeInfo)[1][1])}
+                    className="input-tag"
+                  >
+                    {Object.entries(abiTypeInfo)[1][1]}
+                  </Tag>
+                </label>
+                <Select
+                  options={options}
+                  onChange={(value) =>
+                    setFieldValue(
+                      `${name ? `${name}.` : ''}${key}.selected`,
+                      value?.value
+                    )
+                  }
+                />
+                <ParseInputFieldsFromObject
+                  values={{ ...newValues }}
+                  errors={errors}
+                  initialValues={initialValues}
+                  abiTypes={abiTypes}
+                  parentKeys={lParentKeys}
+                  handleChange={handleChange}
+                  handleArrayPush={handleArrayPush}
+                  handleArrayPop={handleArrayPop}
+                  setFieldValue={setFieldValue}
+                />
+                <Root>
+                  <Portal>
+                    <Content>
+                      <p className="tooltip-input-text-hint">
+                        Finalized Value which will go for to contract
+                      </p>
+                    </Content>
+                  </Portal>
+                </Root>
+                {/* <p className="input-error">{error}</p> */}
+              </div>
+            </div>
+          );
+        }
         return (
           <div
             className="w-full flex flex-col shadow-md shadow-green-500 rounded p-2 my-2 bg-green-50 function-struct"
@@ -195,23 +317,24 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
               handleChange={handleChange}
               handleArrayPush={handleArrayPush}
               handleArrayPop={handleArrayPop}
+              setFieldValue={setFieldValue}
             />
           </div>
         );
       }
       if (Array.isArray(currentValueObject)) {
         const pathKeys = parentKeys ? [...parentKeys, key] : [key];
-        const initalArrPath = pathKeys.map((pathItem) => {
+        const initialArrPath = pathKeys.map((pathItem) => {
           if (Number.isNaN(parseInt(pathItem, 10))) {
             return pathItem;
           }
           return '0';
         });
-        let initalObj = '';
-        if (loadashFp.has(initialValues, initalArrPath)) {
-          const initalArr = loadashFp.get(initialValues, initalArrPath);
+        let initialObj = '';
+        if (loadashFp.has(initialValues, initialArrPath)) {
+          const initalArr = loadashFp.get(initialValues, initialArrPath);
           if (initalArr && Array.isArray(initalArr) && initalArr.length > 0) {
-            [initalObj] = initalArr;
+            [initialObj] = initalArr;
           }
         }
 
@@ -252,7 +375,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleArrayPush(pathKeys, initalObj);
+                  handleArrayPush(pathKeys, initialObj);
                 }}
                 className="array-add"
               >
@@ -280,9 +403,6 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                 if (name.length > 0 && name.startsWith('.')) {
                   name = name.slice(1);
                 }
-
-                const fullPath = lParentKeys;
-
                 let error = '';
                 let coreArrAbiTypeInfo = '';
 
@@ -387,6 +507,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                       handleChange={handleChange}
                       handleArrayPush={handleArrayPush}
                       handleArrayPop={handleArrayPop}
+                      setFieldValue={setFieldValue}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -404,10 +525,10 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
 type IFunctionForm = {
   buttonLabel?: string;
   callbackFn: (value: CallbackReturnType) => void;
+  enums: ABIEnum[];
   functionAbi: ABIFunction;
   response?: React.ReactNode;
   structs: ABIStruct[];
-  enums: ABIEnum[];
 };
 
 const FunctionForm: React.FC<IFunctionForm> = ({
@@ -442,13 +563,13 @@ const FunctionForm: React.FC<IFunctionForm> = ({
     extractValidationSchema(initialValuesMap)
   );
   const abiTypesInfo = Object.freeze(extractAbiTypes(initialValuesMap));
-  console.log({
-    functionAbi,
-    initialValuesMap,
-    initialValues,
-    validationSchema,
-    abiTypesInfo,
-  });
+  // console.log({
+  //   functionAbi,
+  //   initialValuesMap,
+  //   initialValues,
+  //   validationSchema,
+  //   abiTypesInfo,
+  // });
 
   // Persistent State on Jotai
   const [formStates, setFormsState] = useAtom(formsAtom);
@@ -456,7 +577,14 @@ const FunctionForm: React.FC<IFunctionForm> = ({
 
   // console.log(functionAbi?.name, { oldFormStates });
 
-  const { values, errors, setValues, handleChange, handleSubmit } = useFormik({
+  const {
+    values,
+    errors,
+    setValues,
+    handleChange,
+    handleSubmit,
+    setFieldValue,
+  } = useFormik({
     initialValues: {
       ...initialValues,
     },
@@ -502,7 +630,6 @@ const FunctionForm: React.FC<IFunctionForm> = ({
       }
     },
   });
-
   useEffect(() => {
     if (oldFormStates) {
       setValues(oldFormStates);
@@ -567,6 +694,7 @@ const FunctionForm: React.FC<IFunctionForm> = ({
           handleChange={handleChange}
           handleArrayPush={handleArrayPush}
           handleArrayPop={handleArrayPop}
+          setFieldValue={setFieldValue}
         />
         <Button
           type="submit"

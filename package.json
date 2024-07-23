@@ -178,5 +178,8 @@
     "trim": ">=0.0.3",
     "trim-newlines": ">=3.0.1",
     "yaml": ">=2.2.2"
+  },
+  "dependencies": {
+    "react-select": "^5.8.0"
   }
 }
