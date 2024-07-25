@@ -218,7 +218,6 @@ export const expandEnumsAndReduce = (
                 type: 'core',
                 abi_type: cMember.type,
                 validationSchema: Yup.string()
-                  .required()
                   // @ts-expect-error because validate_core_type is not a function of Yup
                   .validate_core_type(cMember.type),
                 content: '',
@@ -238,7 +237,6 @@ export const expandEnumsAndReduce = (
                     abi_type: cMember.type,
                     validationSchema: Yup.array(
                       Yup.string()
-                        .required()
                         // @ts-expect-error because validate_core_type is not a function of Yup
                         .validate_core_type(subArrType)
                     ),
@@ -593,10 +591,8 @@ export function extractValidationSchema(values: UIType | {}): {} {
         return {
           ...p,
           [c]: Yup.object().shape({
-            select: Yup.string().required(),
-            versions: Yup.object(
-              extractValidationSchema(currentObj?.content.variants)
-            ),
+            selected: Yup.string().required(),
+            variants: Yup.object(),
           }),
         };
       }

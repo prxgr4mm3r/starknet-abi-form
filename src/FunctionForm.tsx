@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Select from 'react-select';
 
 import * as Yup from 'yup';
-import { FormikErrors, useFormik } from 'formik';
+import { Formik, FormikErrors, FormikProps } from 'formik';
 import loadashFp from 'lodash';
-import { useAtom } from 'jotai';
 import { ABIEnum, ABIFunction, ABIStruct, yupAbiFunctionSchema } from './types';
 
 import './FunctionForm.css';
@@ -29,7 +28,6 @@ import {
   transformStringArrayToInteger,
 } from './types/helper';
 import { CallbackReturnType } from './ABIForm';
-import { formsAtom } from './atoms';
 import { finalTransformedValue } from './types/dataTypes';
 import { Content, Portal, Root, Trigger } from './UIComponents/Tooltip/Tooltip';
 
@@ -71,16 +69,25 @@ const typeToTagColor = (name: string): TagColors => {
 type IParseInputFieldsFromObject = {
   abiTypes: Record<string, string | {} | Array<{}>>;
   errors: Record<string, string | {} | Array<{}>>;
-  handleArrayPop: (path: string[], index: number) => void;
-  handleArrayPush: (path: string[], value: string | {}) => void;
+  handleArrayPop: (
+    path: string[],
+    index: number,
+    props: FormikProps<any>
+  ) => void;
+  handleArrayPush: (
+    path: string[],
+    value: string | {},
+    props: FormikProps<any>
+  ) => void;
   handleChange: (e: React.ChangeEvent<any>) => any;
   initialValues: Record<string, string | {} | Array<{}>>;
   parentKeys?: string[];
+  props: FormikProps<any>;
   setFieldValue: (
     field: string,
     value: any,
     shouldValidate?: boolean | undefined
-  ) => Promise<void> | Promise<FormikErrors<{}>>;
+  ) => Promise<void | FormikErrors<{}>>;
   values: Record<string, string | {} | Array<{}>>;
 };
 const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
@@ -93,6 +100,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
   handleArrayPush,
   handleArrayPop,
   setFieldValue,
+  props,
 }) => {
   if (typeof values === 'object') {
     const keys = Object.keys(values);
@@ -225,15 +233,36 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
               const variantAbi = abiEntries.find((entry) => entry[0] === k);
               if (
                 Object.values(currentValueObject)[0] === k &&
-                (!variantAbi || variantAbi[1] !== '()')
+                variantAbi &&
+                variantAbi[1] !== '()'
               ) {
                 newValues = {
                   ...newValues,
                   [k]: v,
                 };
+                props.registerField(
+                  `${name ? `${name}.` : ''}${key}.variants.${variantAbi[0]}`,
+                  {
+                    validate: (value) => {
+                      if (value === '') {
+                        return `${
+                          name ? `${name}.` : ''
+                        }${key} is a required field`;
+                      }
+                      return '';
+                    },
+                  }
+                );
+              } else if (variantAbi) {
+                props.unregisterField(
+                  `${name ? `${name}.` : ''}${key}.variants.${variantAbi[0]}`
+                );
               }
             }
           );
+          const selectError = props.getFieldMeta(
+            `${name ? `${name}.` : ''}${key}.selected`
+          ).error;
           // console.log({
           //   newValues,
           //   abi: Object.entries(Object.values(abiTypeInfo)[2]),
@@ -285,6 +314,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                   handleArrayPush={handleArrayPush}
                   handleArrayPop={handleArrayPop}
                   setFieldValue={setFieldValue}
+                  props={props}
                 />
                 <Root>
                   <Portal>
@@ -295,7 +325,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                     </Content>
                   </Portal>
                 </Root>
-                {/* <p className="input-error">{error}</p> */}
+                <p className="input-error">{selectError}</p>
               </div>
             </div>
           );
@@ -318,6 +348,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
               handleArrayPush={handleArrayPush}
               handleArrayPop={handleArrayPop}
               setFieldValue={setFieldValue}
+              props={props}
             />
           </div>
         );
@@ -341,7 +372,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
         const [accordianTabsState, setAccordianTabsState] = useState<string[]>(
           (): string[] => {
             const retArr = currentValueObject
-              ? currentValueObject?.map((obj, index) => {
+              ? currentValueObject?.map((_, index) => {
                   const lParentKeys = parentKeys
                     ? [...parentKeys, key, index.toString()]
                     : [key, index.toString()];
@@ -375,7 +406,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleArrayPush(pathKeys, initialObj);
+                  handleArrayPush(pathKeys, initialObj, props);
                 }}
                 className="array-add"
               >
@@ -435,7 +466,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                       color="red"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleArrayPop(pathKeys, index);
+                        handleArrayPop(pathKeys, index, props);
                       }}
                     >
                       DELETE
@@ -486,11 +517,11 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                         tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleArrayPop(pathKeys, index);
+                          handleArrayPop(pathKeys, index, props);
                         }}
                         onKeyDown={(e) => {
                           e.stopPropagation();
-                          handleArrayPop(pathKeys, index);
+                          handleArrayPop(pathKeys, index, props);
                         }}
                       >
                         DELETE -
@@ -508,6 +539,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                       handleArrayPush={handleArrayPush}
                       handleArrayPop={handleArrayPop}
                       setFieldValue={setFieldValue}
+                      props={props}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -570,101 +602,31 @@ const FunctionForm: React.FC<IFunctionForm> = ({
   //   validationSchema,
   //   abiTypesInfo,
   // });
-
-  // Persistent State on Jotai
-  const [formStates, setFormsState] = useAtom(formsAtom);
-  const oldFormStates = formStates[functionAbi.name];
-
-  // console.log(functionAbi?.name, { oldFormStates });
-
-  const {
-    values,
-    errors,
-    setValues,
-    handleChange,
-    handleSubmit,
-    setFieldValue,
-  } = useFormik({
-    initialValues: {
-      ...initialValues,
-    },
-    enableReinitialize: true,
-    validationSchema: Yup.object(validationSchema),
-    onSubmit: (finalValues) => {
-      try {
-        const finalizedValues = finalizeValues(
-          finalValues,
-          'core::integer::u256'
-        );
-        const rawArrayValues = flattenToRawCallData(finalizedValues);
-        // console.log('rawArrayValues:', rawArrayValues);
-        const starkliValues = transformStringArrayToInteger(
-          flattenArrays(rawArrayValues) as string[]
-        );
-        // console.log('starkliValues', starkliValues);
-        const starknetValues = Object.keys(finalizedValues).map(
-          // @ts-ignore
-          (key) => finalizedValues[key]
-        );
-        // console.log('starknetValues', starknetValues);
-
-        const callbackReturnValues: CallbackReturnType = {
-          raw: finalValues,
-          functionName: functionAbi?.name,
-          stateMutability: functionAbi?.state_mutability,
-          starknetjs: starknetValues,
-          starkli: {
-            bigint: starkliValues,
-            decimal: starkliValues.map((v) => v.toString(10)).join(' '),
-            hex: starkliValues.map((v) => `0x${v.toString(16)}`).join(' '),
-          },
-        };
-        callbackFn(callbackReturnValues);
-      } catch (e) {
-        console.error(e);
-        callbackFn({
-          raw: finalValues,
-          functionName: functionAbi?.name,
-          stateMutability: functionAbi?.state_mutability,
-        });
-      }
-    },
-  });
-  useEffect(() => {
-    if (oldFormStates) {
-      setValues(oldFormStates);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Update the Atom with a function name key
-    if (!loadashFp.isEqual(initialValues, values)) {
-      setFormsState({
-        ...formStates,
-        [functionAbi.name]: values,
-      });
-    }
-  }, [values]);
-
-  // console.log(values, errors, dirty);
-
-  const handleArrayPush = (path: string[], value: string | {}) => {
-    if (loadashFp.has(values, path)) {
-      const oldValues = loadashFp.get(values, path);
+  const handleArrayPush = async (
+    path: string[],
+    value: string | {},
+    props: FormikProps<any>
+  ) => {
+    if (loadashFp.has(props.values, path)) {
+      const oldValues = loadashFp.get(props.values, path);
       const newValues = [...oldValues, value];
-      loadashFp.set(values, path, newValues);
-      setValues({ ...values });
+      loadashFp.set(props.values, path, newValues);
+      await props.setValues({ ...props.values });
     }
   };
 
-  const handleArrayPop = (path: string[], index: number) => {
-    if (loadashFp.has(values, path)) {
-      const oldValues = loadashFp.get(values, path);
+  const handleArrayPop = async (
+    path: string[],
+    index: number,
+    props: FormikProps<any>
+  ) => {
+    if (loadashFp.has(props.values, path)) {
+      const oldValues = loadashFp.get(props.values, path);
       const newValues = [
-        ...oldValues.filter((o: any, i: number) => i !== index),
+        ...oldValues.filter((_: any, i: number) => i !== index),
       ];
-      loadashFp.set(values, path, newValues);
-      setValues({ ...values });
+      loadashFp.set(props.values, path, newValues);
+      await props.setValues({ ...props.values });
     }
   };
 
@@ -685,25 +647,76 @@ const FunctionForm: React.FC<IFunctionForm> = ({
         ))}
         )
       </div>
-      <form onSubmit={handleSubmit} className="function-form">
-        <ParseInputFieldsFromObject
-          values={values}
-          errors={errors}
-          initialValues={initialValues}
-          abiTypes={abiTypesInfo}
-          handleChange={handleChange}
-          handleArrayPush={handleArrayPush}
-          handleArrayPop={handleArrayPop}
-          setFieldValue={setFieldValue}
-        />
-        <Button
-          type="submit"
-          color="purple"
-          className="my-2 function-form-submit"
-        >
-          {buttonLabel || 'Call'}
-        </Button>
-      </form>
+      <Formik
+        initialValues={{
+          ...initialValues,
+        }}
+        enableReinitialize
+        validationSchema={Yup.object(validationSchema)}
+        onSubmit={(finalValues) => {
+          try {
+            // console.log({ finalValues });
+            const finalizedValues = finalizeValues(
+              finalValues,
+              'core::integer::u256'
+            );
+            const rawArrayValues = flattenToRawCallData(finalizedValues);
+            // console.log('rawArrayValues:', rawArrayValues);
+            const starkliValues = transformStringArrayToInteger(
+              flattenArrays(rawArrayValues) as string[]
+            );
+            // console.log('starkliValues', starkliValues);
+            const starknetValues = Object.keys(finalizedValues).map(
+              // @ts-ignore
+              (key) => finalizedValues[key]
+            );
+            // console.log('starknetValues', starknetValues);
+
+            const callbackReturnValues: CallbackReturnType = {
+              raw: finalValues,
+              functionName: functionAbi?.name,
+              stateMutability: functionAbi?.state_mutability,
+              starknetjs: starknetValues,
+              starkli: {
+                bigint: starkliValues,
+                decimal: starkliValues.map((v) => v.toString(10)).join(' '),
+                hex: starkliValues.map((v) => `0x${v.toString(16)}`).join(' '),
+              },
+            };
+            callbackFn(callbackReturnValues);
+          } catch (e) {
+            console.error(e);
+            callbackFn({
+              raw: finalValues,
+              functionName: functionAbi?.name,
+              stateMutability: functionAbi?.state_mutability,
+            });
+          }
+        }}
+      >
+        {(props) => (
+          <form onSubmit={props.handleSubmit} className="function-form">
+            <ParseInputFieldsFromObject
+              values={props.values}
+              errors={props.errors}
+              initialValues={props.initialValues}
+              abiTypes={abiTypesInfo}
+              handleChange={props.handleChange}
+              handleArrayPush={handleArrayPush}
+              handleArrayPop={handleArrayPop}
+              setFieldValue={props.setFieldValue}
+              props={props}
+            />
+            <Button
+              type="submit"
+              color="purple"
+              className="my-2 function-form-su  bmit"
+            >
+              {buttonLabel || 'Call'}
+            </Button>
+          </form>
+        )}
+      </Formik>
       <div className="my-2 function-response">{response}</div>
     </div>
   );
