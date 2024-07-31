@@ -197,8 +197,9 @@ export const expandEnumsAndReduce = (
       Array.isArray(enumObj.variants) &&
       enumObj.variants.length > 0
     ) {
+      console.log({ enumObj });
       return {
-        selected: '',
+        selected: { type: enumObj.name, content: '' },
         variants: enumObj.variants.reduce((pMember, cMember) => {
           if (cMember.type === '()') {
             return {
@@ -218,6 +219,7 @@ export const expandEnumsAndReduce = (
                 type: 'core',
                 abi_type: cMember.type,
                 validationSchema: Yup.string()
+                  .required()
                   // @ts-expect-error because validate_core_type is not a function of Yup
                   .validate_core_type(cMember.type),
                 content: '',
@@ -261,6 +263,7 @@ export const expandEnumsAndReduce = (
                     abi_type: cMember.type,
                     content: [
                       {
+                        $types: 'struct',
                         ...reducedStruct,
                       },
                     ],
@@ -285,6 +288,7 @@ export const expandEnumsAndReduce = (
                     abi_type: cMember.type,
                     content: [
                       {
+                        $type: 'enum',
                         ...reducedEnum,
                       },
                     ],
@@ -384,6 +388,7 @@ export const reduceFunctionInputs = (
       const isSubTypes = extractSubTypesFromType(c.type);
       if (isSubTypes && isSubTypes?.contains && isSubTypes?.types) {
         const subArrType = isSubTypes.types[0];
+        console.log({ c });
         if (isACoreType(subArrType)) {
           return {
             ...p,
@@ -416,6 +421,7 @@ export const reduceFunctionInputs = (
               abi_type: c.type,
               content: [
                 {
+                  $type: 'struct',
                   ...reducedStruct,
                 },
               ],
@@ -439,6 +445,7 @@ export const reduceFunctionInputs = (
               abi_type: c.type,
               content: [
                 {
+                  $type: 'enum',
                   ...reducedEnum,
                 },
               ],
@@ -525,7 +532,8 @@ export function extractInitialValues(values: UIType | {}): {} {
         return {
           ...p,
           [c]: {
-            selected: currentObj?.content.selected,
+            $type: 'enum',
+            selected: currentObj?.content.selected.content,
             variants: extractInitialValues(currentObj?.content.variants),
           },
         };
@@ -539,6 +547,23 @@ export function extractInitialValues(values: UIType | {}): {} {
             return {
               ...p,
               [c]: [''],
+            };
+          }
+          if (
+            Object.keys(currentObj?.content[0]).includes('$type') &&
+            Object.values(currentObj?.content[0])[0] === 'enum'
+          ) {
+            return {
+              ...p,
+              [c]: [
+                {
+                  $type: 'enum',
+                  selected: currentObj?.content[0].selected.content,
+                  variants: extractInitialValues(
+                    currentObj?.content[0].variants
+                  ),
+                },
+              ],
             };
           }
           return {
@@ -656,6 +681,18 @@ export function extractAbiTypes(values: UIType | {}): {} {
           currentObj?.content.length > 0 &&
           typeof currentObj?.content[0] === 'object'
         ) {
+          if (Object.values(currentObj?.content[0])[0] === 'enum') {
+            return {
+              ...p,
+              [c]: [
+                {
+                  $type: Object.values(currentObj?.content[0])[0],
+                  selected: currentObj?.content[0].selected.type,
+                  variants: extractAbiTypes(currentObj?.content[0].variants),
+                },
+              ],
+            };
+          }
           return {
             ...p,
             [c]: [{ ...extractAbiTypes(currentObj?.content[0]) }],
