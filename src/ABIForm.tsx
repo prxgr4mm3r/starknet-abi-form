@@ -109,6 +109,7 @@ export const ABIForm: React.FC<ABIFormProps> = ({
           {viewFunctions.map((viewFn) => (
             <FunctionForm
               key={`viewFn-${viewFn.name}`}
+              abi={abi}
               functionAbi={viewFn}
               structs={structs}
               enums={enums}
@@ -122,6 +123,7 @@ export const ABIForm: React.FC<ABIFormProps> = ({
           {externalFunctions.map((externalFn) => (
             <FunctionForm
               key={`externalFn-${externalFn.name}`}
+              abi={abi}
               functionAbi={externalFn}
               structs={structs}
               enums={enums}

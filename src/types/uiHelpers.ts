@@ -625,7 +625,7 @@ export function extractValidationSchema(values: UIType | {}): {} {
       if (currentObj?.type === 'array') {
         // We can safely take 0th object from array since
         // we have assigned in our default parsing for presenting arrays.
-        console.log({ content: currentObj?.content[0] });
+        // console.log({ content: currentObj?.content[0] });
         return {
           ...p,
           [c]: currentObj?.validationSchema

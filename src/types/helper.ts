@@ -202,7 +202,7 @@ export const transformStringArrayToInteger = (value: string[]): bigint[] =>
 //   return value;
 // }
 
-export function finalizeValues(val: any, types: any): any {
+export function finalizeValues(val: any): any {
   if (typeof val === 'string') {
     return finalTransformedValue(val);
   }
@@ -212,27 +212,27 @@ export function finalizeValues(val: any, types: any): any {
       if (typeof v === 'string') {
         return finalTransformedValue(v);
       }
-      return finalizeValues(v, types);
+      return finalizeValues(v);
     });
   }
 
   if (typeof val === 'object') {
-    console.log(
-      'obj in finalize: ',
-      Object.entries(val),
-      Object.keys(val).includes('$type')
-    );
+    // console.log(
+    //   'obj in finalize: ',
+    //   Object.entries(val),
+    //   Object.keys(val).includes('$type')
+    // );
     if (Object.keys(val).includes('$type')) {
       const enumVariant = Object.keys(Object.values(val)[2] as object)[0];
       const variantValue = Object.values(Object.values(val)[2] as object)[0];
-      console.log({ enumVariant, variantValue });
+      // console.log({ enumVariant, variantValue });
       return new CairoCustomEnum({
-        [enumVariant]: finalizeValues(variantValue, types),
+        [enumVariant]: finalizeValues(variantValue),
       });
     }
     return Object.keys(val).reduce((prev, key) => {
       const curr = val[key];
-      const currFVal = finalizeValues(curr, types);
+      const currFVal = finalizeValues(curr);
       return {
         ...prev,
         [key]: currFVal,

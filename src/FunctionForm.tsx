@@ -903,27 +903,19 @@ const FunctionForm: React.FC<IFunctionForm> = ({
         validationSchema={Yup.object(validationSchema)}
         onSubmit={(finalValues) => {
           try {
-            console.log({
-              finalValues,
-              abiTypesInfo,
-            });
-            const finalizedValues = finalizeValues(finalValues, abiTypesInfo);
-            console.log({ finalizedValues });
-            const rawArrayValues = flattenToRawCallData(
+            const finalizedValues = finalizeValues(finalValues);
+            // console.log({ finalizedValues });
+            const starknetValues = flattenToRawCallData(
               finalizedValues,
               functionAbi.name,
               abi
             );
-            console.log({ rawArrayValues });
+            // console.log({ starknetValues });
             const starkliValues = transformStringArrayToInteger(
-              flattenArrays(rawArrayValues) as string[]
+              flattenArrays(starknetValues) as string[]
             );
-            console.log('starkliValues', starkliValues);
-            const starknetValues = Object.keys(finalizedValues).map(
-              // @ts-ignore
-              (key) => finalizedValues[key]
-            );
-            console.log('starknetValues', starknetValues);
+            // console.log('starkliValues', starkliValues);
+            // console.log('starknetValues', starknetValues);
 
             const callbackReturnValues: CallbackReturnType = {
               raw: finalValues,
@@ -936,7 +928,7 @@ const FunctionForm: React.FC<IFunctionForm> = ({
                 hex: starkliValues.map((v) => `0x${v.toString(16)}`).join(' '),
               },
             };
-            console.log(callbackReturnValues);
+            // console.log(callbackReturnValues);
             callbackFn(callbackReturnValues);
           } catch (e) {
             console.error(e);
