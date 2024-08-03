@@ -197,7 +197,7 @@ export const expandEnumsAndReduce = (
       Array.isArray(enumObj.variants) &&
       enumObj.variants.length > 0
     ) {
-      console.log({ enumObj });
+      // console.log({ enumObj });
       return {
         selected: { type: enumObj.name, content: '' },
         variants: enumObj.variants.reduce((pMember, cMember) => {
@@ -388,7 +388,7 @@ export const reduceFunctionInputs = (
       const isSubTypes = extractSubTypesFromType(c.type);
       if (isSubTypes && isSubTypes?.contains && isSubTypes?.types) {
         const subArrType = isSubTypes.types[0];
-        console.log({ c });
+        // console.log({ c });
         if (isACoreType(subArrType)) {
           return {
             ...p,
@@ -625,12 +625,29 @@ export function extractValidationSchema(values: UIType | {}): {} {
       if (currentObj?.type === 'array') {
         // We can safely take 0th object from array since
         // we have assigned in our default parsing for presenting arrays.
+        console.log({ content: currentObj?.content[0] });
         return {
           ...p,
           [c]: currentObj?.validationSchema
             ? currentObj?.validationSchema
             : Yup.array(
-                Yup.object(extractValidationSchema(currentObj?.content[0]))
+                Object.entries(currentObj?.content[0]).includes([
+                  '$type',
+                  'enum',
+                ])
+                  ? Yup.object()
+                      .shape({
+                        selected: Yup.string().nonNullable().required(),
+                        variants: Yup.object(
+                          extractValidationSchema(
+                            currentObj?.content[0].variants
+                          )
+                        ),
+                      })
+                      .required()
+                  : Yup.object(
+                      extractValidationSchema(currentObj?.content[0])
+                    ).required()
               ).required(),
         };
       }

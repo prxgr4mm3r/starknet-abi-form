@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import { Abi, CairoCustomEnum, CallData } from "starknet";
 import { ABI, ABIFunction, ABIStruct, ABIEnum } from '.';
 import { finalTransformedValue } from './dataTypes';
 
@@ -201,32 +202,7 @@ export const transformStringArrayToInteger = (value: string[]): bigint[] =>
 //   return value;
 // }
 
-export function finalizeValues(val: any, type: string): any {
-  if (typeof val === 'object') {
-    return Object.keys(val).reduce((prev, key) => {
-      const curr = val[key];
-      const currFVal = finalizeValues(curr, type);
-      return {
-        ...prev,
-        [key]: currFVal,
-      };
-    }, {});
-  }
-  // const value = BigInt(finalTransformedValue(val));
-  // console.log(typeof value);
-  // if (type.startsWith('core::integer::u256')) {
-  //   const first = value && 2n ** 128n;
-  //   const binary = value.toString(2);
-  //   const second = binary.slice(0, 128);
-  //   console.log('u256 serialize: ', first, second, binary);
-  // } else if (
-  //   type.startsWith('core::integer::u') ||
-  //   type.startsWith('core::felt252')
-  // ) {
-  //   // todo
-  // } else if (type.startsWith('core::integer::i')) {
-  //   // todo
-  // }
+export function finalizeValues(val: any, types: any): any {
   if (typeof val === 'string') {
     return finalTransformedValue(val);
   }
@@ -236,32 +212,39 @@ export function finalizeValues(val: any, type: string): any {
       if (typeof v === 'string') {
         return finalTransformedValue(v);
       }
-      return finalizeValues(v, type);
+      return finalizeValues(v, types);
     });
   }
+
+  if (typeof val === 'object') {
+    console.log(
+      'obj in finalize: ',
+      Object.entries(val),
+      Object.keys(val).includes('$type')
+    );
+    if (Object.keys(val).includes('$type')) {
+      const enumVariant = Object.keys(Object.values(val)[2] as object)[0];
+      const variantValue = Object.values(Object.values(val)[2] as object)[0];
+      console.log({ enumVariant, variantValue });
+      return new CairoCustomEnum({
+        [enumVariant]: finalizeValues(variantValue, types),
+      });
+    }
+    return Object.keys(val).reduce((prev, key) => {
+      const curr = val[key];
+      const currFVal = finalizeValues(curr, types);
+      return {
+        ...prev,
+        [key]: currFVal,
+      };
+    }, {});
+  }
+
   return val;
 }
 
-export function flattenToRawCallData(value: any): any {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return [
-      value.length,
-      ...value.map((lValue) => {
-        if (typeof lValue === 'string') {
-          return lValue;
-        }
-        return flattenToRawCallData(lValue);
-      }),
-    ];
-  }
-  if (typeof value === 'object') {
-    return Object.keys(value).map((key) => {
-      const curr = value[key];
-      return flattenToRawCallData(curr);
-    });
-  }
-  return '';
+export function flattenToRawCallData(value: any, name: string, abi: ABI): any {
+  const myCallData = new CallData(<Abi>abi);
+  const result = myCallData.compile(name, value);
+  return result;
 }
