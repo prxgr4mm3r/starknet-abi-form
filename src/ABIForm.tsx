@@ -2,13 +2,13 @@ import './ABIForm.css';
 
 import React, { useMemo, useState } from 'react';
 
-import { ABI, abiSchema } from './types/index';
+import { ABI, abiSchema } from './types';
 import {
   extractEnumsFromABI,
   extractFunctionFromRawAbi,
   extractStructFromABI,
-  segregateViewAndExternalFunctions
-} from "./types/helper";
+  segregateViewAndExternalFunctions,
+} from './types/helper';
 import FunctionForm from './FunctionForm';
 import { Content, List, Root, Trigger } from './UIComponents/Tabs/Tabs';
 import { ActiveTabClasses, DefaultTabClasses } from './utils/tailwindClasses';

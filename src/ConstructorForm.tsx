@@ -2,7 +2,7 @@ import './ABIForm.css';
 
 import React, { useMemo } from 'react';
 
-import { ABI, abiSchema } from './types/index';
+import { ABI, abiSchema } from './types';
 import {
   convertConstructorToFunction,
   EMPTY_CONSTRUCTOR_FUNCTION,

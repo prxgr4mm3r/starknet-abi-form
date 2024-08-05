@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Abi, CairoCustomEnum, CallData } from "starknet";
+import { Abi, CairoCustomEnum, CallData } from 'starknet';
 import { ABI, ABIFunction, ABIStruct, ABIEnum } from '.';
 import { finalTransformedValue } from './dataTypes';
 
