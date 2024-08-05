@@ -197,7 +197,6 @@ export const expandEnumsAndReduce = (
       Array.isArray(enumObj.variants) &&
       enumObj.variants.length > 0
     ) {
-      // console.log({ enumObj });
       return {
         selected: { type: enumObj.name, content: '' },
         variants: enumObj.variants.reduce((pMember, cMember) => {
@@ -388,7 +387,6 @@ export const reduceFunctionInputs = (
       const isSubTypes = extractSubTypesFromType(c.type);
       if (isSubTypes && isSubTypes?.contains && isSubTypes?.types) {
         const subArrType = isSubTypes.types[0];
-        // console.log({ c });
         if (isACoreType(subArrType)) {
           return {
             ...p,
@@ -513,7 +511,6 @@ export function extractInitialValues(values: UIType | {}): {} {
     return Object.keys(values).reduce((p, c) => {
       // @ts-ignore
       const currentObj = values[c];
-      // console.log(currentObj);
       if (currentObj?.type === 'core') {
         return {
           ...p,
@@ -597,7 +594,6 @@ export function extractValidationSchema(values: UIType | {}): {} {
     return Object.keys(values).reduce((p, c) => {
       // @ts-ignore
       const currentObj = values[c];
-      //   console.log(currentObj);
       if (currentObj?.type === 'core' || currentObj?.type === '()') {
         return {
           ...p,
@@ -625,7 +621,6 @@ export function extractValidationSchema(values: UIType | {}): {} {
       if (currentObj?.type === 'array') {
         // We can safely take 0th object from array since
         // we have assigned in our default parsing for presenting arrays.
-        // console.log({ content: currentObj?.content[0] });
         return {
           ...p,
           [c]: currentObj?.validationSchema

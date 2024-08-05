@@ -115,7 +115,6 @@ export const ABIForm: React.FC<ABIFormProps> = ({
               enums={enums}
               callbackFn={callBackFn}
               response={responses && responses[viewFn?.name]}
-              // enums={enums}
             />
           ))}
         </Content>
@@ -129,7 +128,6 @@ export const ABIForm: React.FC<ABIFormProps> = ({
               enums={enums}
               callbackFn={callBackFn}
               response={responses && responses[externalFn?.name]}
-              // enums={enums}
             />
           ))}
         </Content>

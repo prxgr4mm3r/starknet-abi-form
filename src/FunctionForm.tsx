@@ -41,7 +41,6 @@ const typeToTagColor = (name: string): TagColors => {
   try {
     const pathNames = name?.split('::');
     const coreType = pathNames[pathNames.length - 1];
-    // console.log({pathNames, coreType})
     switch (coreType) {
       case 'u8':
       case 'u16':
@@ -117,18 +116,11 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
 }) => {
   if (typeof values === 'object') {
     const keys = Object.keys(values);
-    // console.log(
-    //   'Values on parse from object:',
-    //   values,
-    //   props.values,
-    //   props.errors
-    // );
 
     return keys.map((key) => {
       const currentValueObject = values[key];
-      // console.log({ currentValueObject, parentKeys });
       const fullPath = parentKeys ? [...parentKeys, key] : [key];
-      // console.log({ fullPath });
+
       // Since Type conform to initial state,
       // For arrays index 0 will have the valid type.
       const initialFullPath = fullPath.map((pathItem) => {
@@ -157,13 +149,10 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
       }
 
       if (typeof currentValueObject === 'string') {
-        // console.log({ name });
-        // console.log({ has: loadashFp.has(abiTypes, initialFullPath) });
         if (loadashFp.has(abiTypes, initialFullPath)) {
           abiTypeInfo = loadashFp.get(abiTypes, initialFullPath);
         }
-        // console.log({ abiTypeInfo });
-        // console.log({ initialFullPath });
+
         let error = '';
 
         if (loadashFp.has(errors, fullPath)) {
@@ -239,17 +228,13 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
           Object.entries(Object.entries(abiTypeInfo)[2][1]).forEach(
             ([k, val]) => options.push({ value: k, label: `${k}(${val})` })
           );
-          // console.log(
-          //   'currentValueObject when parsing enum:',
-          //   currentValueObject
-          // );
+
           let newValues = {};
           let unregisterValues = {};
-          // console.log({ valuess: Object.values(currentValueObject) });
+
           Object.entries(Object.values(currentValueObject)[2]).forEach(
             ([k, v]) => {
               const abiEntries = Object.entries(Object.values(abiTypeInfo)[2]);
-              // console.log({ abiEntries, k });
               const variantAbi = abiEntries.find((entry) => entry[0] === k);
               if (
                 Object.values(currentValueObject)[1] === k &&
@@ -268,28 +253,11 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
               }
             }
           );
-          // props.registerField(`${name ? `${name}.` : ''}${key}`, {
-          //   validate: (value) => {
-          //     console.log('value in register:field', { value });
-          //     if (value.selected === '') {
-          //       return `${
-          //         name ? `${name}.` : ''
-          //       }${key}.selected is a required field`;
-          //     }
-          //     return '';
-          //   },
-          // });
+
           const selectError = props.getFieldMeta(
             `${name ? `${name}.` : ''}${key}.selected`
           ).error;
-          // console.log({
-          //   newValues,
-          //   abi: Object.entries(Object.values(abiTypeInfo)[2]),
-          // });
-          // console.log({
-          //   path: lParentKeys.slice(0, lParentKeys.length - 1),
-          //   initialFullPath,
-          // });
+
           return (
             <div
               className="w-full flex flex-col shadow-md shadow-green-500 rounded p-2 my-2 bg-green-50 function-struct"
@@ -414,7 +382,6 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
             return retArr;
           }
         );
-        // console.log({ initialObj });
         return (
           <AccordionRoot
             type="multiple"
@@ -530,10 +497,6 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                   </div>
                 );
               }
-              // console.log({
-              //   coreArrAbiTypeInfo: coreArrAbiTypeInfo[0],
-              //   values: Object.values(coreArrAbiTypeInfo[0]),
-              // });
               if (
                 Object.keys(coreArrAbiTypeInfo[0]).includes('$type') &&
                 Object.values(coreArrAbiTypeInfo[0])[0] === 'enum'
@@ -541,30 +504,22 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                 lParentKeys = [...lParentKeys, 'variants'];
 
                 const options = [{ value: '', label: 'Select an option' }];
-                // console.log({ entries: Object.entries(abiTypeInfo[0]) });
                 Object.entries(Object.entries(abiTypeInfo[0])[2][1]).forEach(
                   ([k, val]) =>
                     options.push({ value: k, label: `${k}(${val})` })
                 );
-                // console.log(
-                //   'currentValueObject when parsing enum:',
-                //   Object.values(obj)
-                // );
+
                 let newValues = {};
                 let unregisterValues = {};
                 const variants =
                   typeof Object.values(obj)[2] === 'object'
                     ? Object.values(obj)[2]
                     : {};
-                // console.log({ variants });
                 Object.entries(variants as object).forEach(([k, v]) => {
-                  // console.log({ abiTypeInfo });
                   const abiEntries = Object.entries(
                     Object.values(abiTypeInfo[0])[2]
                   );
-                  // console.log({ abiEntries });
                   const variantAbi = abiEntries.find((entry) => entry[0] === k);
-                  // console.log({ variantAbi });
                   if (
                     Object.values(obj)[1] === k &&
                     variantAbi &&
@@ -581,31 +536,11 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                     };
                   }
                 });
-                // console.log({ newValues, options, name, key, obj, index });
-                // recursiveUnregister(
-                //   unregisterValues,
-                //   lParentKeys,
-                //   abiTypes,
-                //   props
-                // );
-                // props.registerField(`${name ? `${name}.` : ''}${key}`, {
-                //   validate: (value) => {
-                //     console.log('value in register:field', { value });
-                //     if (value.selected === '') {
-                //       return `${
-                //         name ? `${name}.` : ''
-                //       }${key}.selected is a required field`;
-                //     }
-                //     return '';
-                //   },
-                // });
-                // const selectError = props.getFieldMeta(
-                //   `${name ? `${name}.` : ''}${key}.selected`
-                // ).error;
-                // console.log({
-                //   newValues,
-                //   abi: Object.entries(Object.values(abiTypeInfo)[2]),
-                // });
+
+                const selectError = props.getFieldMeta(
+                  `${name ? `${name}.` : ''}${key}.selected`
+                ).error;
+
                 return (
                   <AccordionItem
                     value={lParentKeys.join('|')}
@@ -668,13 +603,6 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                         <Select
                           options={options}
                           onChange={async (value) => {
-                            // console.log({
-                            //   initialFullPathCoreArr,
-                            //   path: lParentKeys.slice(
-                            //     0,
-                            //     lParentKeys.length - 1
-                            //   ),
-                            // });
                             handleEnumSelect(
                               lParentKeys.slice(0, lParentKeys.length - 1),
                               [...initialFullPathCoreArr, '0'],
@@ -712,7 +640,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
                             </Content>
                           </Portal>
                         </Root>
-                        {/* <p className="input-error">{selectError}</p> */}
+                        <p className="input-error">{selectError}</p>
                       </div>
                     </div>
                   </AccordionItem>
@@ -816,13 +744,6 @@ const FunctionForm: React.FC<IFunctionForm> = ({
     extractValidationSchema(initialValuesMap)
   );
   const abiTypesInfo = Object.freeze(extractAbiTypes(initialValuesMap));
-  // console.log({
-  //   functionAbi,
-  //   initialValuesMap,
-  //   initialValues,
-  //   validationSchema,
-  //   abiTypesInfo,
-  // });
   const handleArrayPush = async (
     path: string[],
     value: string | {},
@@ -857,9 +778,7 @@ const FunctionForm: React.FC<IFunctionForm> = ({
     variant: string,
     props: FormikProps<any>
   ) => {
-    // console.log({ propsInitialValues: props.initialValues, path });
     const variants = loadashFp.get(initialValues, [...initialPath, 'variants']);
-    // console.log({ variants });
     let newVariants = {};
     Object.entries(variants).forEach(([k, v]) => {
       if (variant === k) {
@@ -869,14 +788,12 @@ const FunctionForm: React.FC<IFunctionForm> = ({
         };
       }
     });
-    // console.log({ variant, newVariants });
     const newValues = {
       $type: 'enum',
       selected: variant,
       variants: newVariants,
     };
     loadashFp.set(props.values, path, newValues);
-    // console.log({ values: props.values });
     await props.setValues({ ...props.values });
   };
 
@@ -904,18 +821,14 @@ const FunctionForm: React.FC<IFunctionForm> = ({
         onSubmit={(finalValues) => {
           try {
             const finalizedValues = finalizeValues(finalValues);
-            // console.log({ finalizedValues });
             const starknetValues = flattenToRawCallData(
               finalizedValues,
               functionAbi.name,
               abi
             );
-            // console.log({ starknetValues });
             const starkliValues = transformStringArrayToInteger(
               flattenArrays(starknetValues) as string[]
             );
-            // console.log('starkliValues', starkliValues);
-            // console.log('starknetValues', starknetValues);
 
             const callbackReturnValues: CallbackReturnType = {
               raw: finalValues,
@@ -928,7 +841,6 @@ const FunctionForm: React.FC<IFunctionForm> = ({
                 hex: starkliValues.map((v) => `0x${v.toString(16)}`).join(' '),
               },
             };
-            // console.log(callbackReturnValues);
             callbackFn(callbackReturnValues);
           } catch (e) {
             console.error(e);
