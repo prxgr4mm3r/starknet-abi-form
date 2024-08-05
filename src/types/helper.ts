@@ -127,7 +127,7 @@ type ReturnExtractedSubTypes = {
 
 export function hasSubTypes(type: string): boolean {
   const regex = /<[^<>]*>/g;
-  if (type && typeof type === 'string') {
+  if (type) {
     return regex.test(type);
   }
   return false;
@@ -135,7 +135,7 @@ export function hasSubTypes(type: string): boolean {
 
 export function hasArrayOfSubType(type: string): boolean {
   const regex = /^core::array/g;
-  if (type && typeof type === 'string') {
+  if (type) {
     return regex.test(type);
   }
   return false;
@@ -168,12 +168,7 @@ export function extractSubTypesFromType(type: string): ReturnExtractedSubTypes {
 export const flattenArrays = (value: any) => _.flattenDeep(value);
 
 export const transformStringArrayToInteger = (value: string[]): bigint[] =>
-  value.map((lValue) => {
-    if (typeof lValue === 'string') {
-      return BigInt(lValue);
-    }
-    return lValue;
-  });
+  value.map((lValue) => BigInt(lValue));
 
 export function finalizeValues(val: any): any {
   if (typeof val === 'string') {
@@ -191,11 +186,15 @@ export function finalizeValues(val: any): any {
 
   if (typeof val === 'object') {
     if (Object.keys(val).includes('$type')) {
-      const enumVariant = Object.keys(Object.values(val)[2] as object)[0];
-      const variantValue = Object.values(Object.values(val)[2] as object)[0];
-      return new CairoCustomEnum({
-        [enumVariant]: finalizeValues(variantValue),
-      });
+      try {
+        const enumVariant = Object.keys(Object.values(val)[2] as object)[0];
+        const variantValue = Object.values(Object.values(val)[2] as object)[0];
+        return new CairoCustomEnum({
+          [enumVariant]: finalizeValues(variantValue),
+        });
+      } catch (e) {
+        console.log(e);
+      }
     }
     return Object.keys(val).reduce((prev, key) => {
       const curr = val[key];
