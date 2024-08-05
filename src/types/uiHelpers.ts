@@ -36,32 +36,32 @@ const expandStructsAndReduce = (
       Array.isArray(struct.members) &&
       struct.members.length > 0
     ) {
-      return struct.members.reduce((pMember, cMember) => {
-        if (isACoreType(cMember.type)) {
+      return struct.members.reduce((prev, currentMember) => {
+        if (isACoreType(currentMember.type)) {
           return {
-            ...pMember,
-            [cMember.name]: {
+            ...prev,
+            [currentMember.name]: {
               type: 'core',
-              abi_type: cMember.type,
+              abi_type: currentMember.type,
               validationSchema: Yup.string()
                 .required()
                 // @ts-expect-error because validate_core_type is not a function of Yup
-                .validate_core_type(cMember.type),
+                .validate_core_type(currentMember.type),
               content: '',
             },
           };
         }
-        if (hasArrayOfSubType(cMember.type)) {
-          const isSubTypes = extractSubTypesFromType(cMember.type);
+        if (hasArrayOfSubType(currentMember.type)) {
+          const isSubTypes = extractSubTypesFromType(currentMember.type);
           if (isSubTypes && isSubTypes?.contains && isSubTypes?.types) {
             const subArrType = isSubTypes.types[0];
             // Is Array is of core type return,
             if (isACoreType(subArrType)) {
               return {
-                ...pMember,
-                [cMember.name]: {
+                ...prev,
+                [currentMember.name]: {
                   type: 'array',
-                  abi_type: cMember.type,
+                  abi_type: currentMember.type,
                   validationSchema: Yup.array(
                     Yup.string()
                       .required()
@@ -82,11 +82,11 @@ const expandStructsAndReduce = (
               );
 
               return {
-                ...pMember,
-                [cMember.name]: {
+                ...prev,
+                [currentMember.name]: {
                   type: 'array',
                   validationSchema: null,
-                  abi_type: cMember.type,
+                  abi_type: currentMember.type,
                   content: [
                     {
                       ...reducedStruct,
@@ -106,11 +106,11 @@ const expandStructsAndReduce = (
               );
 
               return {
-                ...pMember,
-                [cMember.name]: {
+                ...prev,
+                [currentMember.name]: {
                   type: 'array',
                   validationSchema: null,
-                  abi_type: cMember.type,
+                  abi_type: currentMember.type,
                   content: [
                     {
                       ...reducedEnum,
@@ -121,10 +121,10 @@ const expandStructsAndReduce = (
             }
 
             return {
-              ...pMember,
-              [cMember.name]: {
+              ...prev,
+              [currentMember.name]: {
                 type: 'raw',
-                abi_type: cMember.type,
+                abi_type: currentMember.type,
                 validationSchema: Yup.string(),
                 content: '',
               },
@@ -132,7 +132,7 @@ const expandStructsAndReduce = (
           }
         }
 
-        const structIdx = functionFindFromStructs(structs, cMember.type);
+        const structIdx = functionFindFromStructs(structs, currentMember.type);
 
         if (structIdx > -1) {
           const reducedStruct = expandStructsAndReduce(
@@ -142,10 +142,10 @@ const expandStructsAndReduce = (
           );
 
           return {
-            ...pMember,
-            [cMember.name]: {
+            ...prev,
+            [currentMember.name]: {
               type: 'struct',
-              abi_type: cMember.type,
+              abi_type: currentMember.type,
               validationSchema: null,
               content: {
                 ...reducedStruct,
@@ -154,7 +154,7 @@ const expandStructsAndReduce = (
           };
         }
 
-        const enumArrIdx = functionFindFromEnums(enums, cMember.type);
+        const enumArrIdx = functionFindFromEnums(enums, currentMember.type);
 
         if (enumArrIdx > -1) {
           const reducedEnum = expandEnumsAndReduce(
@@ -164,11 +164,11 @@ const expandStructsAndReduce = (
           );
 
           return {
-            ...pMember,
-            [cMember.name]: {
+            ...prev,
+            [currentMember.name]: {
               type: 'enum',
               validationSchema: null,
-              abi_type: cMember.type,
+              abi_type: currentMember.type,
               content: {
                 ...reducedEnum,
               },
@@ -177,7 +177,7 @@ const expandStructsAndReduce = (
         }
 
         return {
-          ...pMember,
+          ...prev,
         };
       }, {});
     }
@@ -199,43 +199,43 @@ export const expandEnumsAndReduce = (
     ) {
       return {
         selected: { type: enumObj.name, content: '' },
-        variants: enumObj.variants.reduce((pMember, cMember) => {
-          if (cMember.type === '()') {
+        variants: enumObj.variants.reduce((prev, currentVariant) => {
+          if (currentVariant.type === '()') {
             return {
-              ...pMember,
-              [cMember.name]: {
+              ...prev,
+              [currentVariant.name]: {
                 type: '()',
-                abi_type: cMember.type,
+                abi_type: currentVariant.type,
                 validationSchema: null,
                 content: '',
               },
             };
           }
-          if (isACoreType(cMember.type)) {
+          if (isACoreType(currentVariant.type)) {
             return {
-              ...pMember,
-              [cMember.name]: {
+              ...prev,
+              [currentVariant.name]: {
                 type: 'core',
-                abi_type: cMember.type,
+                abi_type: currentVariant.type,
                 validationSchema: Yup.string()
                   .required()
                   // @ts-expect-error because validate_core_type is not a function of Yup
-                  .validate_core_type(cMember.type),
+                  .validate_core_type(currentVariant.type),
                 content: '',
               },
             };
           }
-          if (hasArrayOfSubType(cMember.type)) {
-            const isSubTypes = extractSubTypesFromType(cMember.type);
+          if (hasArrayOfSubType(currentVariant.type)) {
+            const isSubTypes = extractSubTypesFromType(currentVariant.type);
             if (isSubTypes && isSubTypes?.contains && isSubTypes?.types) {
               const subArrType = isSubTypes.types[0];
               // Is Array is of core type return,
               if (isACoreType(subArrType)) {
                 return {
-                  ...pMember,
-                  [cMember.name]: {
+                  ...prev,
+                  [currentVariant.name]: {
                     type: 'array',
-                    abi_type: cMember.type,
+                    abi_type: currentVariant.type,
                     validationSchema: Yup.array(
                       Yup.string()
                         // @ts-expect-error because validate_core_type is not a function of Yup
@@ -255,11 +255,11 @@ export const expandEnumsAndReduce = (
                 );
 
                 return {
-                  ...pMember,
-                  [cMember.name]: {
+                  ...prev,
+                  [currentVariant.name]: {
                     type: 'array',
                     validationSchema: null,
-                    abi_type: cMember.type,
+                    abi_type: currentVariant.type,
                     content: [
                       {
                         $types: 'struct',
@@ -280,11 +280,11 @@ export const expandEnumsAndReduce = (
                 );
 
                 return {
-                  ...pMember,
-                  [cMember.name]: {
+                  ...prev,
+                  [currentVariant.name]: {
                     type: 'array',
                     validationSchema: null,
-                    abi_type: cMember.type,
+                    abi_type: currentVariant.type,
                     content: [
                       {
                         $type: 'enum',
@@ -296,10 +296,10 @@ export const expandEnumsAndReduce = (
               }
 
               return {
-                ...pMember,
-                [cMember.name]: {
+                ...prev,
+                [currentVariant.name]: {
                   type: 'raw',
-                  abi_type: cMember.type,
+                  abi_type: currentVariant.type,
                   validationSchema: Yup.string(),
                   content: '',
                 },
@@ -307,7 +307,10 @@ export const expandEnumsAndReduce = (
             }
           }
 
-          const structIdx = functionFindFromStructs(structs, cMember.type);
+          const structIdx = functionFindFromStructs(
+            structs,
+            currentVariant.type
+          );
 
           if (structIdx > -1) {
             const reducedStruct = expandStructsAndReduce(
@@ -317,10 +320,10 @@ export const expandEnumsAndReduce = (
             );
 
             return {
-              ...pMember,
-              [cMember.name]: {
+              ...prev,
+              [currentVariant.name]: {
                 type: 'struct',
-                abi_type: cMember.type,
+                abi_type: currentVariant.type,
                 validationSchema: null,
                 content: {
                   ...reducedStruct,
@@ -329,7 +332,7 @@ export const expandEnumsAndReduce = (
             };
           }
 
-          const enumArrIdx = functionFindFromEnums(enums, cMember.type);
+          const enumArrIdx = functionFindFromEnums(enums, currentVariant.type);
 
           if (enumArrIdx > -1) {
             const reducedEnum = expandEnumsAndReduce(
@@ -339,11 +342,11 @@ export const expandEnumsAndReduce = (
             );
 
             return {
-              ...pMember,
-              [cMember.name]: {
+              ...prev,
+              [currentVariant.name]: {
                 type: 'enum',
                 validationSchema: null,
-                abi_type: cMember.type,
+                abi_type: currentVariant.type,
                 content: {
                   ...reducedEnum,
                 },
@@ -352,7 +355,7 @@ export const expandEnumsAndReduce = (
           }
 
           return {
-            ...pMember,
+            ...prev,
           };
         }, {}),
       };
