@@ -22,6 +22,7 @@ it('renders correctly', () => {
       <FunctionForm
         functionAbi={sampleAbi}
         structs={[]}
+        enums={[]}
         callbackFn={(e) => e}
       />
     )

@@ -703,7 +703,7 @@ const ParseInputFieldsFromObject: React.FC<IParseInputFieldsFromObject> = ({
 };
 
 type IFunctionForm = {
-  abi: ABI;
+  abi?: ABI;
   buttonLabel?: string;
   callbackFn: (value: CallbackReturnType) => void;
   enums: ABIEnum[];
@@ -714,12 +714,12 @@ type IFunctionForm = {
 
 const FunctionForm: React.FC<IFunctionForm> = ({
   abi,
-  functionAbi,
-  structs,
-  callbackFn,
-  response,
   buttonLabel,
+  callbackFn,
   enums,
+  functionAbi,
+  response,
+  structs,
 }) => {
   // Check if functionAbi is correct with yup validation schema
   try {
@@ -869,7 +869,7 @@ const FunctionForm: React.FC<IFunctionForm> = ({
             <Button
               type="submit"
               color="purple"
-              className="my-2 function-form-su  bmit"
+              className="my-2 function-form-submit"
             >
               {buttonLabel || 'Call'}
             </Button>
