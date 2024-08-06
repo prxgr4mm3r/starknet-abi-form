@@ -1,7 +1,7 @@
 {
   "name": "starknet-abi-forms",
   "description": "A Starknet ABI Form Parser, with type Validations for Starknet Contracts and making integration faster with Starknet.",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "author": "Prince Anuragi <prince.anuragi@nethermind.io>",
   "license": "MIT",
   "keywords": [
@@ -178,5 +178,9 @@
     "trim": ">=0.0.3",
     "trim-newlines": ">=3.0.1",
     "yaml": ">=2.2.2"
+  },
+  "dependencies": {
+    "react-select": "^5.8.0",
+    "starknet": "^6.11.0"
   }
 }

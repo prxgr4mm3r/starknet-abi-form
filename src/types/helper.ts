@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import { Abi, CairoCustomEnum, CallData } from 'starknet';
 import { ABI, ABIFunction, ABIStruct, ABIEnum } from '.';
 import { finalTransformedValue } from './dataTypes';
 
@@ -99,6 +100,16 @@ export function extractStructFromABI(abi: ABI) {
   return structs;
 }
 
+export function extractEnumFromABI(abi: ABI) {
+  const enums: ABIEnum[] = [];
+  abi?.forEach((item: any) => {
+    if (typeof item === 'object' && item.type && item.type === 'enum') {
+      enums.push(item);
+    }
+  });
+  return enums;
+}
+
 export function extractEnumsFromABI(abi: ABI) {
   const enums: ABIEnum[] = [];
   abi?.forEach((item: any) => {
@@ -116,7 +127,7 @@ type ReturnExtractedSubTypes = {
 
 export function hasSubTypes(type: string): boolean {
   const regex = /<[^<>]*>/g;
-  if (type && typeof type === 'string') {
+  if (type) {
     return regex.test(type);
   }
   return false;
@@ -124,7 +135,7 @@ export function hasSubTypes(type: string): boolean {
 
 export function hasArrayOfSubType(type: string): boolean {
   const regex = /^core::array/g;
-  if (type && typeof type === 'string') {
+  if (type) {
     return regex.test(type);
   }
   return false;
@@ -132,12 +143,17 @@ export function hasArrayOfSubType(type: string): boolean {
 
 export function extractSubTypesFromType(type: string): ReturnExtractedSubTypes {
   const regex = /<[^<>]*>/g;
-  if (type && typeof type === 'string') {
+  if (type) {
     if (hasSubTypes(type)) {
       const matches = type.match(regex) || [];
       const finalMatch = matches.map((lType) =>
         lType.substring(1, lType.length - 1)
       );
+      if (matches.length === 0) {
+        return {
+          contains: false,
+        };
+      }
       return {
         contains: true,
         types: finalMatch,
@@ -152,30 +168,36 @@ export function extractSubTypesFromType(type: string): ReturnExtractedSubTypes {
 export const flattenArrays = (value: any) => _.flattenDeep(value);
 
 export const transformStringArrayToInteger = (value: string[]): bigint[] =>
-  value.map((lValue) => {
-    if (typeof lValue === 'string') {
-      return BigInt(lValue);
-    }
-    return lValue;
-  });
+  value.map((lValue) => BigInt(lValue));
 
-export function finalizeValues(value: any): any {
-  if (typeof value === 'string') {
-    return finalTransformedValue(value);
+export function finalizeValues(val: any): any {
+  if (typeof val === 'string') {
+    return finalTransformedValue(val);
   }
 
-  if (Array.isArray(value)) {
-    return value.map((val) => {
-      if (typeof val === 'string') {
-        return finalTransformedValue(val);
+  if (Array.isArray(val)) {
+    return val.map((v) => {
+      if (typeof v === 'string') {
+        return finalTransformedValue(v);
       }
-      return finalizeValues(val);
+      return finalizeValues(v);
     });
   }
 
-  if (typeof value === 'object') {
-    return Object.keys(value).reduce((prev, key) => {
-      const curr = value[key];
+  if (typeof val === 'object') {
+    if (Object.keys(val).includes('$type')) {
+      try {
+        const enumVariant = Object.keys(Object.values(val)[2] as object)[0];
+        const variantValue = Object.values(Object.values(val)[2] as object)[0];
+        return new CairoCustomEnum({
+          [enumVariant]: finalizeValues(variantValue),
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    }
+    return Object.keys(val).reduce((prev, key) => {
+      const curr = val[key];
       const currFVal = finalizeValues(curr);
       return {
         ...prev,
@@ -183,29 +205,12 @@ export function finalizeValues(value: any): any {
       };
     }, {});
   }
-  return value;
+
+  return val;
 }
 
-export function flattenToRawCallData(value: any): any {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return [
-      value.length,
-      ...value.map((lValue) => {
-        if (typeof lValue === 'string') {
-          return lValue;
-        }
-        return flattenToRawCallData(lValue);
-      }),
-    ];
-  }
-  if (typeof value === 'object') {
-    return Object.keys(value).map((key) => {
-      const curr = value[key];
-      return flattenToRawCallData(curr);
-    });
-  }
-  return '';
+export function flattenToRawCallData(value: any, name: string, abi: ABI): any {
+  const myCallData = new CallData(<Abi>abi);
+  const result = myCallData.compile(name, value);
+  return result;
 }

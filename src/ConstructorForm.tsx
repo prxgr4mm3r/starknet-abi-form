@@ -2,11 +2,13 @@ import './ABIForm.css';
 
 import React, { useMemo } from 'react';
 
-import { ABI, abiSchema } from './types/index';
+import { ABI, abiSchema } from './types';
 import {
   convertConstructorToFunction,
   EMPTY_CONSTRUCTOR_FUNCTION,
   extractConstructorFromRawAbi,
+  extractEnumFromABI,
+  extractStructFromABI,
 } from './types/helper';
 import FunctionForm from './FunctionForm';
 import { Provider } from './UIComponents/Tooltip/Tooltip';
@@ -37,12 +39,30 @@ export const ConstructorForm: React.FC<ConstructorFormProps> = ({
     }
   }, [abi]);
 
+  const structs = useMemo(() => {
+    try {
+      return extractStructFromABI(abi);
+    } catch (e) {
+      return [];
+    }
+  }, [abi]);
+
+  const enums = useMemo(() => {
+    try {
+      return extractEnumFromABI(abi);
+    } catch (e) {
+      return [];
+    }
+  }, [abi]);
+
   return (
     <Provider>
       <FunctionForm
         callbackFn={callBackFn}
         functionAbi={constructor}
-        structs={[]}
+        abi={abi}
+        structs={structs}
+        enums={enums}
         buttonLabel="Deploy"
       />
     </Provider>

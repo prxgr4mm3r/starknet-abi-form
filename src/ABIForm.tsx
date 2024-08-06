@@ -2,8 +2,9 @@ import './ABIForm.css';
 
 import React, { useMemo, useState } from 'react';
 
-import { ABI, abiSchema } from './types/index';
+import { ABI, abiSchema } from './types';
 import {
+  extractEnumsFromABI,
   extractFunctionFromRawAbi,
   extractStructFromABI,
   segregateViewAndExternalFunctions,
@@ -67,13 +68,13 @@ export const ABIForm: React.FC<ABIFormProps> = ({
     }
   }, [abi]);
 
-  // const enums = useMemo(() => {
-  //   try {
-  //     return extractEnumsFromABI(abi);
-  //   } catch (e) {
-  //     return [];
-  //   }
-  // }, [abi]);
+  const enums = useMemo(() => {
+    try {
+      return extractEnumsFromABI(abi);
+    } catch (e) {
+      return [];
+    }
+  }, [abi]);
 
   const [activeTab, setActiveTab] = useState<'read' | 'write'>('read');
 
@@ -108,11 +109,12 @@ export const ABIForm: React.FC<ABIFormProps> = ({
           {viewFunctions.map((viewFn) => (
             <FunctionForm
               key={`viewFn-${viewFn.name}`}
+              abi={abi}
               functionAbi={viewFn}
               structs={structs}
+              enums={enums}
               callbackFn={callBackFn}
               response={responses && responses[viewFn?.name]}
-              // enums={enums}
             />
           ))}
         </Content>
@@ -120,11 +122,12 @@ export const ABIForm: React.FC<ABIFormProps> = ({
           {externalFunctions.map((externalFn) => (
             <FunctionForm
               key={`externalFn-${externalFn.name}`}
+              abi={abi}
               functionAbi={externalFn}
               structs={structs}
+              enums={enums}
               callbackFn={callBackFn}
               response={responses && responses[externalFn?.name]}
-              // enums={enums}
             />
           ))}
         </Content>
