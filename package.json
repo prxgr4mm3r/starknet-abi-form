@@ -165,7 +165,9 @@
     "url-loader": "^4.1.1",
     "vitest": "^0.34.0",
     "yalc": "1.0.0-pre.53",
-    "yup": "^1.2.0"
+    "yup": "^1.2.0",
+    "react-select": "^5.8.0",
+    "starknet": "^6.11.0"
   },
   "peerDependencies": {
     "react": ">=17",
@@ -178,9 +180,5 @@
     "trim": ">=0.0.3",
     "trim-newlines": ">=3.0.1",
     "yaml": ">=2.2.2"
-  },
-  "dependencies": {
-    "react-select": "^5.8.0",
-    "starknet": "^6.11.0"
   }
 }
